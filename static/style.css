@@ -1,0 +1,28 @@
+.container {
+    display: flex;
+    width: 100%;
+}
+.left, .right {
+    width: 50%;
+    padding: 10px;
+}
+.incident {
+    margin-bottom: 20px;
+    cursor: pointer; /* Indicates clickability */
+}
+.incident:hover {
+    background-color: #f0f0f0; /* Hover effect */
+}
+h1 { font-size: 24px; }
+h2 { font-size: 20px; }
+p { margin: 5px 0; }
+.right h3 {
+    margin-top: 0;
+}
+.source-link {
+    color: #0066cc;
+    text-decoration: none;
+}
+.source-link:hover {
+    text-decoration: underline;
+}

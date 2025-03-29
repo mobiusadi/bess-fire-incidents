@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <title>BESS Fire Incidents</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- CesiumJS for globe view -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="left">
             {% if incidents %}
                 {% for incident in incidents %}
-                    <div class="incident">
+                    <div class="incident" data-index="{{ loop.index0 }}">
                         <h1>{{ incident['Location'] }}</h1>
                         <h2>{{ incident['Event Date'] }}</h2>
                         <p><strong>Capacity (MW/MWh):</strong> {{ incident['Capacity (MW)'] }} / {{ incident['Capacity (MWh)'] }}</p>
@@ -22,7 +25,7 @@
                         <p><strong>Source URL:</strong>
                             {% if incident['Source URL'] %}
                                 {% for url in incident['Source URL'].split(',') %}
-                                    <a href="{{ url.strip() }}" target="_blank">{{ url.strip() }}</a><br>
+                                    <a href="{{ url.strip() }}" target="_blank" class="source-link">{{ url.strip() }}</a><br>
                                 {% endfor %}
                             {% else %}
                                 None
@@ -35,9 +38,36 @@
             {% endif %}
         </div>
         <div class="right">
-            <h3>Graphical Data Coming Soon</h3>
-            <!-- Placeholder for map and globe views -->
+            <h3>Map View</h3>
+            <iframe id="map-frame" src="{{ url_for('show_map', index=0) }}" width="100%" height="400"></iframe>
+            <h3>Globe View</h3>
+            <div id="cesiumContainer" style="height: 400px;"></div>
         </div>
     </div>
+    <script>
+        // CesiumJS Globe Initialization
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain()
+        });
+        {% for incident in incidents %}
+            {% if incident['Custom location (Lat, Lon)'] %}
+                var latLon = "{{ incident['Custom location (Lat, Lon)'] }}".split(',');
+                viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(parseFloat(latLon[1].trim()), parseFloat(latLon[0].trim())),
+                    point: { pixelSize: 10, color: Cesium.Color.RED },
+                    label: { text: '{{ incident['Location'] }}' }
+                });
+            {% endif %}
+        {% endfor %}
+        viewer.zoomTo(viewer.entities);
+
+        // Reactive Map Update
+        document.querySelectorAll('.incident').forEach(incident => {
+            incident.addEventListener('click', () => {
+                var index = incident.getAttribute('data-index');
+                document.getElementById('map-frame').src = '/map/' + index;
+            });
+        });
+    </script>
 </body>
 </html>
