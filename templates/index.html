@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BESS Fire Incidents</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            {% if incidents %}
+                {% for incident in incidents %}
+                    <div class="incident">
+                        <h1>{{ incident['Location'] }}</h1>
+                        <h2>{{ incident['Event Date'] }}</h2>
+                        <p><strong>Capacity (MW/MWh):</strong> {{ incident['Capacity (MW)'] }} / {{ incident['Capacity (MWh)'] }}</p>
+                        <p><strong>Battery Modules:</strong> {{ incident['Battery Modules'] }}</p>
+                        <p><strong>Integrator:</strong> {{ incident['Integrator'] }}</p>
+                        <p><strong>Cause:</strong> {{ incident['Cause'] }}</p>
+                        <p><strong>Extent of Damage:</strong> {{ incident['Extent of Damage'] }}</p>
+                        <p><strong>Description:</strong> {{ incident['Description'] }}</p>
+                        <p><strong>Source URL:</strong>
+                            {% if incident['Source URL'] %}
+                                {% for url in incident['Source URL'].split(',') %}
+                                    <a href="{{ url.strip() }}" target="_blank">{{ url.strip() }}</a><br>
+                                {% endfor %}
+                            {% else %}
+                                None
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No incidents found in Failure_DB_List_1.csv.</p>
+            {% endif %}
+        </div>
+        <div class="right">
+            <h3>Graphical Data Coming Soon</h3>
+            <!-- Placeholder for map and globe views -->
+        </div>
+    </div>
+</body>
+</html>
