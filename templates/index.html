@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <title>BESS Fire Incidents</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- CesiumJS for globe view -->
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -23,7 +23,7 @@
                         <p><strong>Extent of Damage:</strong> {{ incident['Extent of Damage'] }}</p>
                         <p><strong>Description:</strong> {{ incident['Description'] }}</p>
                         <p><strong>Source URL:</strong>
-                            {% if incident['Source URL'] %}
+                            {% if incident['Source URL'] and incident['Source URL'] is string %}
                                 {% for url in incident['Source URL'].split(',') %}
                                     <a href="{{ url.strip() }}" target="_blank" class="source-link">{{ url.strip() }}</a><br>
                                 {% endfor %}
@@ -39,35 +39,87 @@
         </div>
         <div class="right">
             <h3>Map View</h3>
-            <iframe id="map-frame" src="{{ url_for('show_map', index=0) }}" width="100%" height="400"></iframe>
+            <iframe id="map-frame" src="{{ url_for('all_map') }}" width="100%" height="400"></iframe>
             <h3>Globe View</h3>
             <div id="cesiumContainer" style="height: 400px;"></div>
+            {% if graph1_json and graph2_json %}
+                <h3>Graphs</h3>
+                <div id="graph1" style="width: 100%; height: 400px;"></div>
+                <div id="graph2" style="width: 100%; height: 400px;"></div>
+            {% endif %}
         </div>
     </div>
     <script>
-        // CesiumJS Globe Initialization
-        var viewer = new Cesium.Viewer('cesiumContainer', {
-            terrainProvider: Cesium.createWorldTerrain()
-        });
-        {% for incident in incidents %}
-            {% if incident['Custom location (Lat, Lon)'] %}
-                var latLon = "{{ incident['Custom location (Lat, Lon)'] }}".split(',');
-                viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(parseFloat(latLon[1].trim()), parseFloat(latLon[0].trim())),
-                    point: { pixelSize: 10, color: Cesium.Color.RED },
-                    label: { text: '{{ incident['Location'] }}' }
-                });
-            {% endif %}
-        {% endfor %}
-        viewer.zoomTo(viewer.entities);
+        console.log("Starting Cesium initialization...");
+        try {
+            Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiNjIyYzliNS05MWFmLTRmMjctOGNjMy1mYTc2MjEwZTI3ZGMiLCJpZCI6Mjg5MDI2LCJpYXQiOjE3NDMyNzgwNjJ9.LiwnUFyIbUR6bO0qCavfIz6Pb7hLBevQZ8vpTfSTVdI';
+            const viewer = new Cesium.Viewer('cesiumContainer', {
+                terrain: Cesium.Terrain.fromWorldTerrain(),
+                sceneMode: Cesium.SceneMode.SCENE3D,
+                timeline: false,
+                animation: false
+            });
+            console.log("Cesium viewer initialized successfully");
 
-        // Reactive Map Update
+            let hasValidPoints = false;
+            {% for incident in incidents %}
+                {% if incident['Custom location (Lat, Lon)'] and incident['Custom location (Lat, Lon)'] is string %}
+                    console.log("Processing incident: {{ incident['Location'] }} with lat/lon: {{ incident['Custom location (Lat, Lon)'] }}");
+                    if ("{{ incident['Custom location (Lat, Lon)'] }}".split(',').length === 2) {
+                        const coords = "{{ incident['Custom location (Lat, Lon)'] }}".split(',').map(coord => parseFloat(coord.trim()));
+                        if (!isNaN(coords[0]) && !isNaN(coords[1])) {
+                            viewer.entities.add({
+                                position: Cesium.Cartesian3.fromDegrees(coords[1], coords[0]),
+                                point: { pixelSize: 10, color: Cesium.Color.RED },
+                                label: { 
+                                    text: '{{ incident['Location'] }}',
+                                    font: '14px sans-serif',
+                                    fillColor: Cesium.Color.WHITE,
+                                    outlineColor: Cesium.Color.BLACK,
+                                    outlineWidth: 2,
+                                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                                    pixelOffset: new Cesium.Cartesian2(0, -10)
+                                }
+                            });
+                            hasValidPoints = true;
+                            console.log("Added point for {{ incident['Location'] }} at lat: " + coords[0] + ", lon: " + coords[1]);
+                        } else {
+                            console.log("Invalid lat/lon for {{ incident['Location'] }}");
+                        }
+                    } else {
+                        console.log("Malformed lat/lon string for {{ incident['Location'] }}");
+                    }
+                {% else %}
+                    console.log("Skipping {{ incident['Location'] }} - no valid lat/lon");
+                {% endif %}
+            {% endfor %}
+
+            if (hasValidPoints) {
+                viewer.zoomTo(viewer.entities);
+                console.log("Zoomed to entities");
+            } else {
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(0, 0, 10000000)
+                });
+                console.log("No valid points, set to default view");
+            }
+        } catch (error) {
+            console.error("Cesium error:", error);
+        }
+
         document.querySelectorAll('.incident').forEach(incident => {
             incident.addEventListener('click', () => {
-                var index = incident.getAttribute('data-index');
+                const index = incident.getAttribute('data-index');
                 document.getElementById('map-frame').src = '/map/' + index;
             });
         });
+
+        {% if graph1_json and graph2_json %}
+            // Render Plotly graphs
+            Plotly.newPlot('graph1', JSON.parse('{{ graph1_json | safe }}'), { responsive: true });
+            Plotly.newPlot('graph2', JSON.parse('{{ graph2_json | safe }}'), { responsive: true });
+        {% endif %}
     </script>
 </body>
 </html>
