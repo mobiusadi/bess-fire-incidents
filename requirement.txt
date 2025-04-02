@@ -1,0 +1,7 @@
+flask
+pandas
+plotly
+requests
+beautifulsoup4
+folium
+gunicorn
