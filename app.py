@@ -17,22 +17,13 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 print("Loading CSV...", file=sys.stderr)
-df = pd.read_csv('Failure_DB_List_1.csv')
+df = pd.read_csv('Failure_DB_List_1_updated.csv')  # Updated to new CSV
 print("CSV loaded!", file=sys.stderr)
-
-# Hardcoded clean URLs
-hardcoded_urls = [
-    "https://www.technologyreview.com/2025/02/13/1111843/battery-fire-moss-landing-power-plant/",
-    "https://www.energystoragejournal.com/belgiums-li-ion-ess-fire-cause-still-unknown-two-months-later/",
-    "https://cfpa-e.eu/fire-in-a-battery-energy-storage-system/",
-    "https://insideclimatenews.org/news/01022025/moss-landing-battery-fire-contamination-health-fears/"
-]
 
 # Cache for URL previews
 preview_cache = {}
 
 def get_url_preview(url):
-    # Check cache first
     if url in preview_cache:
         logger.debug(f"Using cached preview for: {url}")
         return preview_cache[url]
@@ -70,12 +61,6 @@ def get_url_preview(url):
         logger.debug(f"Error for {url}: {e}")
         return {'title': 'Preview Unavailable', 'description': '', 'image': '', 'url': url}
 
-# Pre-fetch previews at startup
-print("Pre-fetching URL previews...", file=sys.stderr)
-for url in hardcoded_urls:
-    get_url_preview(url)
-print("Pre-fetching complete!", file=sys.stderr)
-
 @app.route('/favicon.ico')
 def favicon():
     return '', 204
@@ -83,19 +68,30 @@ def favicon():
 @app.route('/')
 def index():
     print(f"Index route hit! Request path: {request.path}", file=sys.stderr)
-    # Process incidents from CSV, ignore Source URL
+    
+    # Process incidents from CSV
     incidents = df.to_dict('records')
     for incident in incidents:
-        # Use cached previews
-        incident['previews'] = [preview_cache[url] for url in hardcoded_urls]
+        # Fetch previews for each incident's specific URLs
+        urls = [
+            incident.get('Source URL 1', ''),
+            incident.get('Source URL 2', ''),
+            incident.get('Source URL 3', '')
+        ]
+        # Filter out empty URLs
+        urls = [url for url in urls if url]
+        # Get previews for the URLs
+        incident['previews'] = [get_url_preview(url) for url in urls]
 
-    # Graph 1: Enclosure Type
+    # Graph 1: Incidents by Enclosure Type
     enclosure_counts = df['Enclosure Type'].value_counts().reset_index()
     enclosure_counts.columns = ['Enclosure Type', 'Count']
     fig1 = px.bar(enclosure_counts, x='Enclosure Type', y='Count', title='Incidents by Enclosure Type')
     graph1_json = json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder)
 
     # Graph 2: Capacity by Location
+    # Replace NaN in Capacity (MWh) with 0 for the graph
+    df['Capacity (MWh)'] = df['Capacity (MWh)'].fillna(0)
     capacity_by_location = df.groupby('Location')['Capacity (MWh)'].sum().reset_index()
     fig2 = px.bar(capacity_by_location, x='Location', y='Capacity (MWh)', title='Capacity by Location')
     graph2_json = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
