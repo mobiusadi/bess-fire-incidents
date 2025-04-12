@@ -1,0 +1,87 @@
+[33mcommit a3a4c8692fc11cbc475d3639fec99e113f9426a0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sun Apr 6 15:39:03 2025 +0000
+
+    Updated app to use Excel file and pre-fetched URL previews
+
+[33mcommit 60f2628a5becf0d7b77c52e8fd53c15e95404b90[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sun Apr 6 16:10:07 2025 +0100
+
+    Add files via upload
+    
+    lat and long for all locations added and moved to .xlxs format
+
+[33mcommit b31a4e7a722e44b7e53cbeaf4ca87ea457684723[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Fri Apr 4 12:45:12 2025 +0000
+
+    Update app to display all CSV data as cards with incident-specific URL previews
+
+[33mcommit c964791c1413092f92d30a73c800a8b74cf10a00[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Fri Apr 4 12:31:11 2025 +0100
+
+    Add files via upload
+
+[33mcommit 8c13330e799f2dcd47edcbb1eace8d351e580f61[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Fri Apr 4 10:47:40 2025 +0000
+
+    Add Failure_DB_List_1.csv, update style.css and index.html, and ignore venv
+
+[33mcommit b80d23db86836e3fbb0524983f4ba73855af7836[m
+Merge: 17fc2ec 06c9f47
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Fri Apr 4 10:39:03 2025 +0000
+
+    Merge branch 'main' of https://github.com/mobiusadi/bess-fire-incidents
+    Merge remote changes to resolve divergent branches
+
+[33mcommit 17fc2ecfb5c1f69ae39ff5e4c9e55eea91e7ad0b[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Fri Apr 4 10:26:36 2025 +0000
+
+    Fix syntax error in app.py for Render deployment
+
+[33mcommit 06c9f47e07c3d8061f86d048da3dce0957196163[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Wed Apr 2 13:15:32 2025 +0100
+
+    Create requirements.txt
+
+[33mcommit d13654b9a9dc9fa150bf2b4ccc536faca52dc89b[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Wed Apr 2 13:14:37 2025 +0100
+
+    Delete requirement.txt
+
+[33mcommit 473456a94402bbab6f09874927ff28bd07cfb05f[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Wed Apr 2 12:49:01 2025 +0100
+
+    Create requirement.txt
+
+[33mcommit 1acdc4860b279c291083b0bd7716e464fc8d5eaf[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sun Mar 30 19:33:32 2025 +0000
+
+    Add Plotly graphs for incident counts and capacity
+
+[33mcommit cbdc33aab98b7357de2b8be2d112f7393d614a22[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sat Mar 29 19:09:58 2025 +0000
+
+    Add map and globe views with reactivity
+
+[33mcommit c78f17e229a4c51f9e8705ee1639ec5824c903a3[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sat Mar 29 18:51:46 2025 +0000
+
+    Update index.html for Failure_DB_List_1.csv column headings
+
+[33mcommit 5af2b91ff48990149856bc827a6610253e19e39f[m
+Author: mobiusadi <92592587+mobiusadi@users.noreply.github.com>
+Date:   Sat Mar 29 17:15:40 2025 +0000
+
+    Initial commit
