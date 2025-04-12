@@ -3,7 +3,7 @@ import json
 from utils import get_url_preview
 
 # Load the Excel file with the specified sheet
-df = pd.read_excel('Failure_DB_List_2_updated.xlsx', sheet_name='Failure_DB_List_1_updated')
+df = pd.read_excel('Failure_DB_List_2_updated.xlsx', sheet_name='Failure_DB_List_2_updated')
 
 # Collect all unique URLs from 'Source URL 1', 'Source URL 2', 'Source URL 3'
 urls = set()

@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 print("Loading Excel...", file=sys.stderr)
-df = pd.read_excel('Failure_DB_List_2_updated.xlsx', sheet_name='Failure_DB_List_1_updated')
+df = pd.read_excel('Failure_DB_List_2_updated.xlsx', sheet_name='Failure_DB_List_2_updated')
 print("Excel loaded!", file=sys.stderr)
 
 # Cache for URL previews
