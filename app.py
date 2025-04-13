@@ -1,79 +1,168 @@
-from flask import Flask, render_template, request
 import pandas as pd
-import folium
+import dash
+from dash import dcc, html, Input, Output, State, ctx
 import plotly.express as px
-import plotly
-import json
-from utils import get_url_preview  # Import from utils.py
-import logging
-import sys
 
-app = Flask(__name__)
+# Load the Excel file
+df = pd.read_excel("Failure_DB_List_2_updated.xlsx", sheet_name="Failure_DB_List_2_updated")
 
-# Setup logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+# Clean missing values
+df.fillna("-", inplace=True)
 
-print("Loading Excel...", file=sys.stderr)
-df = pd.read_excel('Failure_DB_List_2_updated.xlsx', sheet_name='Failure_DB_List_2_updated')
-print("Excel loaded!", file=sys.stderr)
+# Extract lat/lon
+df["lat"] = df["Custom location (Lat, Lon)"].apply(lambda x: float(str(x).split(",")[0].strip()) if x != "-" else None)
+df["lon"] = df["Custom location (Lat, Lon)"].apply(lambda x: float(str(x).split(",")[1].strip()) if x != "-" else None)
 
-# Cache for URL previews
-preview_cache = {}
+# Filter rows with valid lat/lon
+df = df[df["lat"].notnull() & df["lon"].notnull()]
 
-# Load pre-fetched previews
-try:
-    with open('url_previews.json', 'r') as f:
-        preview_cache = json.load(f)
-    print("Loaded pre-fetched previews.", file=sys.stderr)
-except FileNotFoundError:
-    print("url_previews.json not found. Starting with empty cache.", file=sys.stderr)
+# Add ID column
+df["id"] = df["Location"]
 
-@app.route('/favicon.ico')
-def favicon():
-    return '', 204
+# Power color helper
+def get_mw_color(mw):
+    try:
+        mw = float(mw)
+        if mw < 10: return "green"
+        elif mw < 50: return "orange"
+        else: return "red"
+    except:
+        return "gray"
 
-@app.route('/')
-def index():
-    print(f"Index route hit! Request path: {request.path}", file=sys.stderr)
+# Flag helper (based on 'Country' column)
+def get_flag_url(country):
+    country = country.lower()
+    if "usa" in country or "united states" in country:
+        return "https://flagcdn.com/us.svg"
+    elif "australia" in country:
+        return "https://flagcdn.com/au.svg"
+    elif "germany" in country:
+        return "https://flagcdn.com/de.svg"
+    elif "uk" in country or "united kingdom" in country:
+        return "https://flagcdn.com/gb.svg"
+    elif "china" in country:
+        return "https://flagcdn.com/cn.svg"
+    elif "japan" in country:
+        return "https://flagcdn.com/jp.svg"
+    # Add more countries as needed
+    return ""
 
-    # Process incidents from Excel
-    incidents = df.to_dict('records')
-    for incident in incidents:
-        # Dynamically find URL columns
-        urls = [incident.get(col) for col in df.columns if col.startswith('Source URL')]
-        # Filter out empty URLs
-        urls = [url for url in urls if url and isinstance(url, str)]
-        # Get previews from cache, fallback to 'Preview Not Available'
-        incident['previews'] = [preview_cache.get(url, {'title': 'Preview Not Available', 'description': '', 'image': '', 'url': url}) for url in urls]
+# Base map
+map_fig = px.scatter_mapbox(
+    df,
+    lat="lat",
+    lon="lon",
+    hover_name="Location",
+    zoom=2,
+    height=800
+)
+map_fig.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":0,"l":0,"b":0})
 
-    # Graph 1: Incidents by Enclosure Type
-    enclosure_counts = df['Enclosure Type'].value_counts().reset_index()
-    enclosure_counts.columns = ['Enclosure Type', 'Count']
-    fig1 = px.bar(enclosure_counts, x='Enclosure Type', y='Count', title='Incidents by Enclosure Type')
-    graph1_json = json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder)
+# Dash app
+app = dash.Dash(__name__)
+app.title = "BESS Fire Incidents"
 
-    # Graph 2: Capacity by Location
-    df['Capacity (MWh)'] = df['Capacity (MWh)'].fillna(0)
-    capacity_by_location = df.groupby('Location')['Capacity (MWh)'].sum().reset_index()
-    fig2 = px.bar(capacity_by_location, x='Location', y='Capacity (MWh)', title='Capacity by Location')
-    graph2_json = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
+app.layout = html.Div([  
+    html.H1("BESS Fire Incidents Dashboard", style={"textAlign": "center"}),
 
-    # Map (all incidents)
-    m = folium.Map(location=[20, 0], zoom_start=2)
+    html.Div([
+        html.Div(id="card-stack", style={"width": "40%", "overflowY": "scroll", "height": "800px"}),
+
+        html.Div([
+            dcc.Graph(id="map-graph", figure=map_fig)
+        ], style={"width": "60%"})
+    ], style={"display": "flex"}),
+
+    dcc.Store(id="selected-location", data=None)
+])
+
+# Cards generator
+@app.callback(
+    Output("card-stack", "children"),
+    Input("selected-location", "data")
+)
+def render_cards(selected_id):
+    cards = []
     for _, row in df.iterrows():
-        if pd.notna(row['Custom location (Lat, Lon)']) and isinstance(row['Custom location (Lat, Lon)'], str):
-            try:
-                lat, lon = map(float, row['Custom location (Lat, Lon)'].split(','))
-                folium.Marker([lat, lon], popup=row['Location']).add_to(m)
-            except ValueError:
-                continue
-    map_html = m._repr_html_()
+        is_selected = row["id"] == selected_id
+        border = "4px solid red" if is_selected else "1px solid #ccc"
 
-    print("Rendering template...", file=sys.stderr)
-    return render_template('index.html', incidents=incidents, graph1_json=graph1_json,
-                           graph2_json=graph2_json, map_html=map_html)
+        color = get_mw_color(row["Capacity (MW)"])
+        power_text = html.Div(f"{row['Capacity (MW)']} MW", style={"fontWeight": "bold", "fontSize": "20px", "color": color})
 
-if __name__ == '__main__':
-    print("Starting Flask server...", file=sys.stderr)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        flag_url = get_flag_url(row["Country"])  # Use 'Country' column instead of 'Location'
+        flag_img = html.Img(src=flag_url, style={"height": "30px"}) if flag_url else None
+
+        image = None
+        if row["Source URL 1"] != "-" and any(ext in row["Source URL 1"] for ext in [".jpg", ".png", ".jpeg", ".webp"]):
+            image = html.Img(src=row["Source URL 1"], style={"width": "100%", "height": "auto", "marginTop": "10px"})
+
+        # Generate all field display
+        details = []
+        for col in df.columns:
+            if col in ["lat", "lon", "id"]: continue  # skip helper cols
+            val = row[col]
+            if isinstance(val, float): val = f"{val:.2f}" if not pd.isna(val) else "-"
+            details.append(html.Div([
+                html.Span(f"{col}: ", style={"fontWeight": "bold"}),
+                html.Span(val)
+            ]))
+
+        card = html.Div([
+            html.H3(row["Location"]),
+            html.Div([power_text, flag_img], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
+            html.Div(details),
+            image
+        ],
+        id={"type": "card", "index": row["id"]},
+        n_clicks=0,
+        style={
+            "border": border,
+            "padding": "10px",
+            "margin": "10px",
+            "borderRadius": "10px",
+            "backgroundColor": "#f9f9f9",
+            "cursor": "pointer"
+        })
+        cards.append(card)
+    return cards
+
+# Click interaction (map ↔ card)
+@app.callback(
+    Output("selected-location", "data"),
+    [
+        Input("map-graph", "clickData"),
+        Input({"type": "card", "index": dash.ALL}, "n_clicks")
+    ],
+    [State({"type": "card", "index": dash.ALL}, "id")],
+    prevent_initial_call=True
+)
+def sync_selection(map_click, card_clicks, card_ids):
+    triggered = ctx.triggered_id
+    if triggered == "map-graph" and map_click:
+        return map_click["points"][0]["hovertext"]
+    if isinstance(triggered, dict) and "index" in triggered:
+        return triggered["index"]
+    return dash.no_update
+
+# Update map with selection color
+@app.callback(
+    Output("map-graph", "figure"),
+    Input("selected-location", "data")
+)
+def update_map_highlight(selected_id):
+    colors = df["id"].apply(lambda x: "red" if x == selected_id else "blue")
+    fig = px.scatter_mapbox(
+        df,
+        lat="lat",
+        lon="lon",
+        hover_name="Location",
+        zoom=2,
+        height=800
+    )
+    fig.update_traces(marker=dict(color=colors, size=12))
+    fig.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":0,"l":0,"b":0})
+    return fig
+
+if __name__ == "__main__":
+    app.run(debug=True)
