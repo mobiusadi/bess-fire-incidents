@@ -164,5 +164,5 @@ def update_map_highlight(selected_id):
     fig.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 
-if __name__ == "__main__":
-    app.run(debug=True)
+#if __name__ == "__main__":
+ #   app.run(debug=True)
