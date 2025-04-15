@@ -5,6 +5,7 @@ from dash import dcc, html, Input, Output, State, ctx
 import plotly
 import plotly.express as px
 import re
+import os
 
 app.title = "BESS Fire Incidents"
 
@@ -168,7 +169,6 @@ app.layout = html.Div([
     dcc.Store(id="filtered-grouped-df", data=grouped_df.to_dict("records")),
     html.Div(id="debug-output"),
     html.Div(id="debug-log", style={"color": "red", "padding": "10px"}),
-    # Add a container for injecting JavaScript
     html.Div(id="scroll-script-container", style={"display": "none"})
 ])
 
@@ -364,7 +364,7 @@ def render_map(selected_location, filtered_grouped_df_data):
 
     # Filter rows with valid lat/lon for the map
     map_df = filtered_grouped_df[filtered_grouped_df["lat"].notnull() & filtered_grouped_df["lon"].notnull()]
-    print(f"Map rows with valid lat/lon: {len(map_df)}")
+    print(f"Map rows with развит lat/lon: {len(map_df)}")
     if map_df.empty:
         return html.Div("No valid lat/lon data for map.", style={"color": "red", "textAlign": "center"})
 
@@ -420,5 +420,9 @@ def sync_selection(map_click, card_clicks, card_ids):
         return selected, f"Selected location (card): {selected}"
     return dash.no_update, dash.no_update
 
+# For Render.com deployment
+server = app.server
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 8050))
+    app.run(host="0.0.0.0", port=port, debug=False)
