@@ -1,47 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Battery Failures Dashboard</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <title>Battery Failures Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="container">
-    <!-- Left: Scrollable Incident Cards -->
-    <div class="left-pane">
+  <div class="container">
+    <div class="left-section">
+      <div id="card-stack" class="card-list">
         {% for incident in incidents %}
-            <div class="card">
-                <h3>{{ incident.Location }}</h3>
-                <p><strong>Date:</strong> {{ incident["Event Date"] }}</p>
-                <p><strong>Capacity:</strong> {{ incident["Capacity (MWh)"] }} MWh</p>
-                {% for preview in incident.previews %}
-                    <div class="preview">
-                        <a href="{{ preview.url }}" target="_blank">
-                            <strong>{{ preview.title }}</strong>
-                        </a>
-                        {% if preview.description %}<p>{{ preview.description }}</p>{% endif %}
-                    </div>
-                {% endfor %}
-            </div>
+          <div class="card" data-location="{{ incident.Location }}" data-lat="{{ incident.lat }}" data-lon="{{ incident.lon }}" id="card-{{ incident.id }}">
+            <h3>{{ incident.Location }}</h3>
+            <p><strong>Date:</strong> {{ incident["Event Date"] }}</p>
+            <p><strong>Capacity:</strong> {{ incident["Capacity (MWh)"] }} MWh</p>
+            {% for preview in incident.get('previews', []) %}
+              <div class="preview">
+                <a href="{{ preview.url }}" target="_blank">
+                  <strong>{{ preview.title }}</strong>
+                </a>
+                {% if preview.get('description') %}<p>{{ preview.description }}</p>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
         {% endfor %}
+      </div>
     </div>
-
-    <!-- Right: Graphs + Map -->
-    <div class="right-pane">
-        <div class="plot-container">
-            <div id="graph1"></div>
-            <div id="graph2"></div>
-        </div>
-        <div class="map-container">
-            {{ map_html|safe }}
-        </div>
+    <div class="right-section">
+      <div class="map-container">
+        <div id="map-graph"></div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
+  <script>
     Plotly.newPlot('graph1', {{ graph1_json|tojson }}, {});
     Plotly.newPlot('graph2', {{ graph2_json|tojson }}, {});
-</script>
+    Plotly.newPlot('map-graph', {{ map_html|safe }}, {}); // Initialize the map here
+
+    const cardStack = document.getElementById('card-stack');
+    const cards = document.querySelectorAll('.card');
+
+    document.getElementById('map-graph').on('plotly_click', function(data) {
+      if (data && data.points && data.points.length > 0) {
+        const clickedLocationId = data.points[0].hovertext;
+        const targetCard = document.getElementById(`card-${clickedLocationId}`);
+
+        // Remove highlight from any previously selected card
+        const selectedCard = document.querySelector('.card.selected');
+        if (selectedCard) {
+          selectedCard.classList.remove('selected');
+        }
+
+        // Highlight the clicked card and scroll to it
+        if (targetCard) {
+          targetCard.classList.add('selected');
+          cardStack.scrollTop = targetCard.offsetTop - cardStack.offsetTop - 10; // Adjust offset as needed
+        }
+      }
+    });
+
+    cards.forEach(card => {
+      card.addEventListener('click', function() {
+        const location = this.dataset.location;
+        const lat = parseFloat(this.dataset.lat);
+        const lon = parseFloat(this.dataset.lon);
+
+        // Remove highlight from any previously selected card
+        const selectedCard = document.querySelector('.card.selected');
+        if (selectedCard && selectedCard !== this) {
+          selectedCard.classList.remove('selected');
+        }
+        this.classList.add('selected');
+
+        if (lat && lon) {
+          Plotly.relayout('map-graph', {
+            'mapbox.center': { lat: lat, lon: lon },
+            'mapbox.zoom': 10
+          });
+        }
+      });
+    });
+  </script>
 </body>
 </html>

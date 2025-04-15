@@ -1,0 +1,68 @@
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+#app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+#filter-section {
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  text-align: center;
+}
+
+#dashboard-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#left-section {
+  width: 40%;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+  border-right: 1px solid #ccc;
+  max-height: 80vh; /* Ensure scroll bar appears */
+}
+
+#right-column {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 80vh; /* Ensure scroll bar appears */
+}
+
+#map-section {
+  height: 600px;
+  width: 100%;
+}
+
+#chart-section {
+  padding: 10px;
+  width: 100%;
+  flex-grow: 1;
+}
+
+.card {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.card.selected {
+  border-color: #007bff;
+  background-color: #e7f1ff;
+}
