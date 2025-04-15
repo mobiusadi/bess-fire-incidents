@@ -6,4 +6,5 @@ beautifulsoup4
 folium
 gunicorn
 openpyxl
-dashgunicorn
+dash
+gunicorn
